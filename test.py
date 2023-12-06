@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import logging
 import platform
 
+
 import aiohttp
 import websockets
 import names
@@ -10,6 +11,8 @@ from websockets import WebSocketServerProtocol
 from websockets.exceptions import ConnectionClosedOK
 from aiofile import async_open
 from aiopath import AsyncPath
+
+aiohttp_session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False))
 
 logging.basicConfig(level=logging.INFO)
 log_file_path = "exchange_logs.txt"
@@ -48,7 +51,7 @@ async def get_exchange(response):
 #функция выполнения запросов
 async def request(current_day=0):
     results = []
-    async with aiohttp.ClientSession() as session:   
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:   
         tasks = [] 
         for day  in range(0, int(current_day + 1)):
             date = datetime.now() - timedelta(days=day)
@@ -81,6 +84,9 @@ class Server:
         if self.clients:
             [await client.send(message) for client in self.clients]
 
+    async def send_to_client(self, message: str, ws: WebSocketServerProtocol ):
+        await ws.send(message)
+
     async def ws_handler(self, ws: WebSocketServerProtocol):
         await self.register(ws)
         try:
@@ -96,12 +102,12 @@ class Server:
                 exc = message.split()
                 if len(exc) > 1:
                     r = await request(int(exc[1]))
-                    await self.send_to_clients(r)
+                    await self.send_to_client(r, ws)
                     log_message = f"command used'exchange'"
                     await log_to_file(log_message)
                 else:
                     r = await request()
-                    await self.send_to_clients(r) 
+                    await self.send_to_client(r, ws) 
                     log_message = f"command used'exchange'"
                     await log_to_file(log_message)
                                       
@@ -119,4 +125,3 @@ if __name__ == '__main__':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
     asyncio.run(main())
-    
