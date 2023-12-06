@@ -103,12 +103,12 @@ class Server:
                 if len(exc) > 1:
                     r = await request(int(exc[1]))
                     await self.send_to_client(r, ws)
-                    log_message = f"command used'exchange'"
+                    log_message = f"{ws.name} used 'exchange'"
                     await log_to_file(log_message)
                 else:
                     r = await request()
                     await self.send_to_client(r, ws) 
-                    log_message = f"command used'exchange'"
+                    log_message = f"{ws.name} used 'exchange'"
                     await log_to_file(log_message)
                                       
             else: 
